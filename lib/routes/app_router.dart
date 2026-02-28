@@ -14,6 +14,9 @@ import '../screens/favorites_screen.dart';
 import '../screens/settings_screen.dart';
 import '../screens/main_shell.dart';
 import '../screens/roadmap_screen.dart';
+import '../screens/scenario_list_screen.dart';
+import '../screens/scenario_play_screen.dart';
+import '../screens/scenario_result_screen.dart';
 
 final GoRouter appRouter = GoRouter(
   initialLocation: '/splash',
@@ -81,6 +84,22 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/roadmap',
       builder: (_, __) => const RoadmapScreen(),
+    ),
+    GoRoute(
+      path: '/scenario-list',
+      builder: (_, __) => const ScenarioListScreen(),
+    ),
+    GoRoute(
+      path: '/scenario-play/:scenarioId',
+      builder: (_, state) => ScenarioPlayScreen(
+        scenarioId: state.pathParameters['scenarioId']!,
+      ),
+    ),
+    GoRoute(
+      path: '/scenario-result/:scenarioId',
+      builder: (_, state) => ScenarioResultScreen(
+        scenarioId: state.pathParameters['scenarioId']!,
+      ),
     ),
   ],
 );

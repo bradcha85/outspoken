@@ -440,7 +440,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
                     const SizedBox(height: AppLayout.paddingXL),
 
-                    // ── Quick Actions (Practice / Quiz) ──
+                    // ── Quick Actions (Practice / Quiz / Survival) ──
                     Row(
                       children: [
                         Expanded(
@@ -459,7 +459,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             },
                           ),
                         ),
-                        const SizedBox(width: AppLayout.gapLG),
+                        const SizedBox(width: AppLayout.gapMD),
                         Expanded(
                           child: _QuickActionCard(
                             icon: Icons.quiz_rounded,
@@ -469,6 +469,18 @@ class _HomeScreenState extends State<HomeScreen> {
                             bgColor: AppColors.secondaryColor(context).withValues(alpha: 0.08),
                             borderColor: AppColors.secondaryColor(context).withValues(alpha: 0.15),
                             onTap: () => context.push('/quiz'),
+                          ),
+                        ),
+                        const SizedBox(width: AppLayout.gapMD),
+                        Expanded(
+                          child: _QuickActionCard(
+                            icon: Icons.auto_stories_rounded,
+                            label: '서바이벌',
+                            description: '실전 대화 도전',
+                            color: AppColors.accentColor(context),
+                            bgColor: AppColors.accentColor(context).withValues(alpha: 0.08),
+                            borderColor: AppColors.accentColor(context).withValues(alpha: 0.15),
+                            onTap: () => context.push('/scenario-list'),
                           ),
                         ),
                       ],

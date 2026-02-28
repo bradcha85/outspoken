@@ -6,6 +6,7 @@ import 'providers/phrase_provider.dart';
 import 'providers/progress_provider.dart';
 // [AI Chat 기능 비활성화 — 백엔드 구현 후 복원 예정]
 // import 'providers/chat_provider.dart';
+import 'providers/scenario_provider.dart';
 import 'providers/settings_provider.dart';
 import 'routes/app_router.dart';
 
@@ -29,6 +30,8 @@ class OutSpokenApp extends StatelessWidget {
         // ChangeNotifierProvider(create: (_) => ChatProvider()),
         // Settings: 레벨, 목표, TTS 속도, 알림 설정, 테마 (SharedPreferences 로드)
         ChangeNotifierProvider(create: (_) => SettingsProvider()..load()),
+        // Scenario: 대화 서바이벌 시나리오 데이터 + 결과 (SharedPreferences 로드)
+        ChangeNotifierProvider(create: (_) => ScenarioProvider()..load()),
       ],
       child: Consumer<SettingsProvider>(
         builder: (context, settings, _) => MaterialApp.router(
