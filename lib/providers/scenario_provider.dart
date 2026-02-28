@@ -42,6 +42,11 @@ class ScenarioProvider extends ChangeNotifier {
   int get currentTurnIndex => _currentTurnIndex;
   List<ChoiceResult> get currentChoiceHistory => _currentChoiceHistory;
 
+  ChoiceResult? get previousTurnResult {
+    if (_currentChoiceHistory.isEmpty) return null;
+    return _currentChoiceHistory.last;
+  }
+
   // ── Persistence ──
 
   Future<void> load() async {

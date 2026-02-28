@@ -33,6 +33,9 @@ class ScenarioChoice {
 class ScenarioTurn {
   final int turnNumber;
   final String situation;
+  final String? situationAfterPerfect;
+  final String? situationAfterAwkward;
+  final String? situationAfterFail;
   final String npcDialogue;
   final String npcDialogueKo;
   final List<ScenarioChoice> choices;
@@ -40,10 +43,22 @@ class ScenarioTurn {
   const ScenarioTurn({
     required this.turnNumber,
     required this.situation,
+    this.situationAfterPerfect,
+    this.situationAfterAwkward,
+    this.situationAfterFail,
     required this.npcDialogue,
     required this.npcDialogueKo,
     required this.choices,
   });
+
+  String getSituation(ChoiceResult? previousResult) {
+    if (previousResult == null) return situation;
+    return switch (previousResult) {
+      ChoiceResult.perfect => situationAfterPerfect ?? situation,
+      ChoiceResult.awkward => situationAfterAwkward ?? situation,
+      ChoiceResult.fail => situationAfterFail ?? situation,
+    };
+  }
 }
 
 class Scenario {

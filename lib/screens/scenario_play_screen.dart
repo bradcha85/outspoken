@@ -315,7 +315,7 @@ class _ScenarioPlayScreenState extends State<ScenarioPlayScreen>
               children: [
                 // Situation text
                 Text(
-                  turn.situation,
+                  turn.getSituation(provider.previousTurnResult),
                   style: AppTextStyles.bodyMedium.copyWith(
                     color: AppColors.textSecondaryColor(context),
                   ),
