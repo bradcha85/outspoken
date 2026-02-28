@@ -22,7 +22,7 @@ class PhraseDetailScreen extends StatefulWidget {
 
 class _PhraseDetailScreenState extends State<PhraseDetailScreen> {
   final SherpaTtsService _ttsService = SherpaTtsService.instance;
-  // null=停止中, 'normal'=보통속도 재생중, 'slow'=느린속도 재생중
+  // null=정지, 'normal'=보통속도 재생중, 'slow'=느린속도 재생중
   String? _speakingMode;
   bool _showKorean = false;
   Timer? _playbackTimer;
@@ -36,9 +36,7 @@ class _PhraseDetailScreenState extends State<PhraseDetailScreen> {
   Future<void> _warmUpTts() async {
     try {
       await _ttsService.initialize();
-    } catch (_) {
-      // lazy initialize on first playback if pre-warm fails
-    }
+    } catch (_) {}
   }
 
   @override
@@ -90,6 +88,12 @@ class _PhraseDetailScreenState extends State<PhraseDetailScreen> {
       );
     }
 
+    final category = phraseProvider.categories
+        .where((c) => c.id == phrase.categoryId)
+        .firstOrNull;
+    final catColor = category?.color ?? AppColors.primaryColor(context);
+    final catName = category?.nameEn ?? '';
+
     final allPhrases = phraseProvider.getPhrasesByCategory(phrase.categoryId);
     final currentIndex = allPhrases.indexWhere((p) => p.id == phrase.id);
     final hasPrev = currentIndex > 0;
@@ -97,10 +101,87 @@ class _PhraseDetailScreenState extends State<PhraseDetailScreen> {
     final isFavorite = progressProvider.isFavorite(phrase.id);
     final isLearned = progressProvider.isLearned(phrase.id);
 
+    return Scaffold(
+      backgroundColor: AppColors.bg(context),
+      body: Column(
+        children: [
+          // Header
+          SafeArea(
+            bottom: false,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppLayout.paddingSM,
+                vertical: AppLayout.paddingSM,
+              ),
+              child: Row(
+                children: [
+                  _HeaderIconButton(
+                    icon: Icons.arrow_back,
+                    onTap: () => context.pop(),
+                  ),
+                  const Spacer(),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppLayout.paddingMD,
+                      vertical: AppLayout.paddingSM,
+                    ),
+                    decoration: BoxDecoration(
+                      color: catColor.withValues(alpha: 0.1),
+                      borderRadius:
+                          BorderRadius.circular(AppLayout.radiusCircle),
+                    ),
+                    child: Text(
+                      catName,
+                      style: AppTextStyles.labelLarge.copyWith(
+                        color: catColor,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // Scrollable content
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppLayout.screenPadding,
+              ),
+              child: Column(
+                children: [
+                  const SizedBox(height: AppLayout.gapSM),
+                  _buildPhraseCard(context, phrase),
+                  const SizedBox(height: AppLayout.gapXL),
+                  _buildAudioControls(
+                      context, phrase, settings, isFavorite, progressProvider),
+                  const SizedBox(height: AppLayout.gapXL),
+                  _buildSpeedSlider(context, settings),
+                  if (hasPrev) ...[
+                    const SizedBox(height: AppLayout.gapXL),
+                    _buildPrevButton(context, allPhrases, currentIndex),
+                  ],
+                  const SizedBox(height: AppLayout.paddingMD),
+                ],
+              ),
+            ),
+          ),
+
+          // Fixed bottom bar
+          _buildBottomBar(context, phrase, isLearned, hasNext,
+              allPhrases, currentIndex, progressProvider),
+        ],
+      ),
+    );
+  }
+
+  // ─── Phrase Card ───────────────────────────────────────────────
+
+  Widget _buildPhraseCard(BuildContext context, Phrase phrase) {
     final difficultyColor = switch (phrase.difficulty) {
-      Difficulty.beginner => AppColors.secondary,
-      Difficulty.intermediate => AppColors.primary,
-      Difficulty.advanced => AppColors.accent,
+      Difficulty.beginner => AppColors.secondaryColor(context),
+      Difficulty.intermediate => AppColors.primaryColor(context),
+      Difficulty.advanced => AppColors.accentColor(context),
     };
     final difficultyLabel = switch (phrase.difficulty) {
       Difficulty.beginner => '초급',
@@ -108,296 +189,604 @@ class _PhraseDetailScreenState extends State<PhraseDetailScreen> {
       Difficulty.advanced => '고급',
     };
 
-    return Scaffold(
-      backgroundColor: AppColors.bg(context),
-      appBar: AppBar(
-        backgroundColor: AppColors.surfaceColor(context),
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new),
-          onPressed: () => context.pop(),
-        ),
-        actions: [
-          IconButton(
-            icon: Icon(
-              isFavorite ? Icons.favorite : Icons.favorite_border,
-              color: isFavorite
-                  ? Colors.pinkAccent
-                  : AppColors.textSecondaryColor(context),
-            ),
-            onPressed: () => progressProvider.toggleFavorite(phrase.id),
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppLayout.paddingLG),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceColor(context),
+        borderRadius: BorderRadius.circular(AppLayout.radiusLG),
+        border: Border.all(color: AppColors.borderColor(context)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: AppLayout.elevationSM,
+            offset: const Offset(0, 1),
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppLayout.screenPadding),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 난이도 배지
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: difficultyColor.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(AppLayout.radiusCircle),
-              ),
-              child: Text(
-                difficultyLabel,
-                style: AppTextStyles.caption.copyWith(
-                    color: difficultyColor, fontWeight: FontWeight.w600),
+      child: Column(
+        children: [
+          // Difficulty badge
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppLayout.paddingSM + 2,
+              vertical: AppLayout.paddingXS,
+            ),
+            decoration: BoxDecoration(
+              color: difficultyColor.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(AppLayout.radiusCircle),
+            ),
+            child: Text(
+              difficultyLabel,
+              style: AppTextStyles.caption.copyWith(
+                color: difficultyColor,
+                fontWeight: FontWeight.w600,
               ),
             ),
-            const SizedBox(height: AppLayout.paddingMD),
+          ),
+          const SizedBox(height: AppLayout.paddingMD),
 
-            // 영어 표현
-            Text(phrase.english, style: AppTextStyles.phraseDisplay),
-            const SizedBox(height: AppLayout.gapSM),
+          // English phrase
+          Text(
+            phrase.english,
+            style: AppTextStyles.phraseDisplay.copyWith(
+              color: AppColors.textPrimaryColor(context),
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: AppLayout.gapSM),
 
-            // 발음 기호
-            Text(phrase.pronunciation, style: AppTextStyles.pronunciation),
-            const SizedBox(height: AppLayout.paddingMD),
-
-            // 한국어 (탭으로 보기/숨기기)
-            GestureDetector(
-              onTap: () => setState(() => _showKorean = !_showKorean),
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(AppLayout.paddingMD),
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceAltColor(context),
-                  borderRadius: BorderRadius.circular(AppLayout.radiusMD),
+          // Korean translation (tap to reveal)
+          GestureDetector(
+            onTap: () => setState(() => _showKorean = !_showKorean),
+            child: AnimatedCrossFade(
+              firstChild: Text(
+                phrase.korean,
+                style: AppTextStyles.bodyLarge.copyWith(
+                  color: AppColors.textSecondaryColor(context),
+                  fontSize: 18,
                 ),
-                child: _showKorean
-                    ? Text(phrase.korean, style: AppTextStyles.bodyLarge)
-                    : Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                textAlign: TextAlign.center,
+              ),
+              secondChild: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.visibility_outlined,
+                      color: AppColors.textSecondaryColor(context),
+                      size: AppLayout.iconSM),
+                  const SizedBox(width: AppLayout.gapXS),
+                  Text(
+                    '한국어 뜻 보기',
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: AppColors.textSecondaryColor(context),
+                    ),
+                  ),
+                ],
+              ),
+              crossFadeState: _showKorean
+                  ? CrossFadeState.showFirst
+                  : CrossFadeState.showSecond,
+              duration: const Duration(milliseconds: 200),
+            ),
+          ),
+
+          // Divider + Examples
+          if (phrase.examples.isNotEmpty) ...[
+            Padding(
+              padding:
+                  const EdgeInsets.symmetric(vertical: AppLayout.paddingMD),
+              child: Divider(
+                color: AppColors.borderColor(context),
+                height: 1,
+              ),
+            ),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'EXAMPLE',
+                style: AppTextStyles.labelMedium.copyWith(
+                  color: AppColors.textSecondaryColor(context),
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 1.2,
+                ),
+              ),
+            ),
+            const SizedBox(height: AppLayout.gapSM),
+            ...phrase.examples.map(
+              (ex) => Padding(
+                padding: const EdgeInsets.only(bottom: AppLayout.gapSM),
+                child: _HighlightedExample(
+                  example: ex.english,
+                  phraseEnglish: phrase.english,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  // ─── Audio Controls ────────────────────────────────────────────
+
+  Widget _buildAudioControls(
+    BuildContext context,
+    Phrase phrase,
+    SettingsProvider settings,
+    bool isFavorite,
+    ProgressProvider progressProvider,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AppLayout.paddingSM),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          // Slow
+          _CircleControlButton(
+            icon: _speakingMode == 'slow' ? Icons.stop_rounded : Icons.speed,
+            label: 'Slow',
+            isActive: _speakingMode == 'slow',
+            onTap: () => _speak(
+              phrase.english,
+              SherpaTtsService.slowSpeed,
+              'slow',
+              settings.ttsSpeakerId,
+            ),
+          ),
+          const SizedBox(width: AppLayout.gapXL),
+          // Main play
+          GestureDetector(
+            onTap: () => _speak(
+              phrase.english,
+              SherpaTtsService.mapUiRateToSpeed(settings.speechRate),
+              'normal',
+              settings.ttsSpeakerId,
+            ),
+            child: Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                color: AppColors.primaryColor(context),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color:
+                        AppColors.primaryColor(context).withValues(alpha: 0.3),
+                    blurRadius: AppLayout.paddingMD,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Icon(
+                _speakingMode == 'normal'
+                    ? Icons.stop_rounded
+                    : Icons.volume_up,
+                color: Colors.white,
+                size: 40,
+              ),
+            ),
+          ),
+          const SizedBox(width: AppLayout.gapXL),
+          // Favorite
+          _CircleControlButton(
+            icon: isFavorite ? Icons.favorite : Icons.favorite_border,
+            label: 'Save',
+            isActive: isFavorite,
+            activeColor: Colors.pinkAccent,
+            onTap: () => progressProvider.toggleFavorite(phrase.id),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─── Speed Slider ──────────────────────────────────────────────
+
+  Widget _buildSpeedSlider(BuildContext context, SettingsProvider settings) {
+    final displaySpeed =
+        SherpaTtsService.mapUiRateToSpeed(settings.speechRate);
+
+    return Container(
+      padding: const EdgeInsets.all(AppLayout.paddingMD),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceColor(context),
+        borderRadius: BorderRadius.circular(AppLayout.radiusLG),
+        border: Border.all(color: AppColors.borderColor(context)),
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '속도 조절 (Speed)',
+                style: AppTextStyles.labelMedium.copyWith(
+                  color: AppColors.textSecondaryColor(context),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              Text(
+                '${displaySpeed.toStringAsFixed(1)}x',
+                style: AppTextStyles.labelMedium.copyWith(
+                  color: AppColors.primaryColor(context),
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          SliderTheme(
+            data: SliderTheme.of(context).copyWith(
+              activeTrackColor: AppColors.primaryColor(context),
+              inactiveTrackColor: AppColors.borderColor(context),
+              thumbColor: Colors.white,
+              overlayColor:
+                  AppColors.primaryColor(context).withValues(alpha: 0.1),
+              thumbShape: _SliderThumb(
+                borderColor: AppColors.primaryColor(context),
+              ),
+              trackHeight: 4,
+            ),
+            child: Slider(
+              value: settings.speechRate,
+              min: 0.2,
+              max: 0.7,
+              divisions: 10,
+              onChanged: (val) => settings.setSpeechRate(val),
+            ),
+          ),
+          Padding(
+            padding:
+                const EdgeInsets.symmetric(horizontal: AppLayout.paddingXS),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('0.8x',
+                    style: AppTextStyles.caption.copyWith(
+                        color: AppColors.textDisabledColor(context))),
+                Text('1.1x',
+                    style: AppTextStyles.caption.copyWith(
+                        color: AppColors.textDisabledColor(context))),
+                Text('1.4x',
+                    style: AppTextStyles.caption.copyWith(
+                        color: AppColors.textDisabledColor(context))),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─── Prev Button ────────────────────────────────────────────────
+
+  Widget _buildPrevButton(
+    BuildContext context,
+    List<Phrase> allPhrases,
+    int currentIndex,
+  ) {
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton.icon(
+        icon: const Icon(Icons.arrow_back_ios_new, size: 14),
+        label: const Text('이전'),
+        onPressed: () => context.pushReplacement(
+            '/phrase/${allPhrases[currentIndex - 1].id}'),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: AppColors.textSecondaryColor(context),
+          side: BorderSide(color: AppColors.borderColor(context)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppLayout.radiusMD),
+          ),
+          padding:
+              const EdgeInsets.symmetric(vertical: AppLayout.paddingMD),
+        ),
+      ),
+    );
+  }
+
+  // ─── Bottom Bar ────────────────────────────────────────────────
+
+  Widget _buildBottomBar(
+    BuildContext context,
+    Phrase phrase,
+    bool isLearned,
+    bool hasNext,
+    List<Phrase> allPhrases,
+    int currentIndex,
+    ProgressProvider progressProvider,
+  ) {
+    return Container(
+      padding: EdgeInsets.fromLTRB(
+        AppLayout.screenPadding,
+        AppLayout.paddingMD,
+        AppLayout.screenPadding,
+        MediaQuery.of(context).padding.bottom + AppLayout.paddingMD,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceColor(context),
+        border: Border(
+          top: BorderSide(color: AppColors.borderColor(context)),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 6,
+            offset: const Offset(0, -4),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Mark as Learned
+          SizedBox(
+            width: double.infinity,
+            height: 56,
+            child: isLearned
+                ? Container(
+                    decoration: BoxDecoration(
+                      color: AppColors.secondaryColor(context)
+                          .withValues(alpha: 0.1),
+                      borderRadius:
+                          BorderRadius.circular(AppLayout.radiusMD),
+                    ),
+                    child: Center(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.visibility_outlined,
-                              color: AppColors.textSecondaryColor(context),
-                              size: 18),
-                          const SizedBox(width: 6),
+                          Icon(Icons.check_circle,
+                              color: AppColors.secondaryColor(context)),
+                          const SizedBox(width: AppLayout.gapSM),
                           Text(
-                            '한국어 뜻 보기',
-                            style: AppTextStyles.bodyMedium.copyWith(
-                                color: AppColors.textSecondaryColor(context)),
+                            '학습 완료됨',
+                            style: AppTextStyles.titleLarge.copyWith(
+                              color: AppColors.secondaryColor(context),
+                            ),
                           ),
                         ],
                       ),
+                    ),
+                  )
+                : ElevatedButton.icon(
+                    icon: const Icon(Icons.check_circle),
+                    label: const Text('학습 완료'),
+                    onPressed: () {
+                      progressProvider.markPhraseAsLearned(phrase.id);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('학습 완료!'),
+                          duration: Duration(seconds: 1),
+                        ),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.secondary,
+                      foregroundColor: Colors.white,
+                      textStyle: AppTextStyles.titleLarge,
+                      shape: RoundedRectangleBorder(
+                        borderRadius:
+                            BorderRadius.circular(AppLayout.radiusMD),
+                      ),
+                      elevation: 0,
+                    ),
+                  ),
+          ),
+          if (hasNext) ...[
+            const SizedBox(height: AppLayout.gapMD),
+            SizedBox(
+              width: double.infinity,
+              height: 56,
+              child: ElevatedButton(
+                onPressed: () => context.pushReplacement(
+                    '/phrase/${allPhrases[currentIndex + 1].id}'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryColor(context),
+                  foregroundColor: Colors.white,
+                  textStyle: AppTextStyles.titleLarge,
+                  shape: RoundedRectangleBorder(
+                    borderRadius:
+                        BorderRadius.circular(AppLayout.radiusMD),
+                  ),
+                  elevation: 0,
+                ),
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text('다음'),
+                    SizedBox(width: AppLayout.gapXS),
+                    Icon(Icons.arrow_forward_ios, size: 16),
+                  ],
+                ),
               ),
             ),
-            const SizedBox(height: AppLayout.paddingMD),
-
-            // TTS 버튼들
-            Row(
-              children: [
-                Expanded(
-                  child: _TtsButton(
-                    icon: _speakingMode == 'normal'
-                        ? Icons.stop_rounded
-                        : Icons.volume_up_rounded,
-                    label: '보통 속도',
-                    color: AppColors.primary,
-                    onTap: () => _speak(
-                      phrase.english,
-                      SherpaTtsService.mapUiRateToSpeed(settings.speechRate),
-                      'normal',
-                      settings.ttsSpeakerId,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: AppLayout.gapMD),
-                Expanded(
-                  child: _TtsButton(
-                    icon: _speakingMode == 'slow'
-                        ? Icons.stop_rounded
-                        : Icons.slow_motion_video_rounded,
-                    label: '느린 속도',
-                    color: AppColors.secondary,
-                    onTap: () => _speak(
-                      phrase.english,
-                      SherpaTtsService.slowSpeed,
-                      'slow',
-                      settings.ttsSpeakerId,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppLayout.paddingXL),
-
-            // 예문
-            if (phrase.examples.isNotEmpty) ...[
-              Text('예문', style: AppTextStyles.headlineSmall),
-              const SizedBox(height: AppLayout.gapMD),
-              ...phrase.examples.map((ex) => _ExampleCard(example: ex)),
-            ],
-
-            const SizedBox(height: AppLayout.paddingXL),
-
-            // 학습 완료 버튼
-            if (!isLearned)
-              SizedBox(
-                width: double.infinity,
-                height: AppLayout.buttonHeight,
-                child: ElevatedButton.icon(
-                  icon: const Icon(Icons.check_circle_outline),
-                  label: const Text('학습 완료'),
-                  onPressed: () {
-                    progressProvider.markPhraseAsLearned(phrase.id);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('✅ 학습 완료!'),
-                        duration: Duration(seconds: 1),
-                      ),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.secondary,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppLayout.radiusMD),
-                    ),
-                    elevation: 0,
-                  ),
-                ),
-              )
-            else
-              Container(
-                width: double.infinity,
-                height: AppLayout.buttonHeight,
-                decoration: BoxDecoration(
-                  color: AppColors.secondary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(AppLayout.radiusMD),
-                ),
-                child: Center(
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.check_circle,
-                          color: AppColors.secondary),
-                      const SizedBox(width: 8),
-                      Text('학습 완료됨',
-                          style: AppTextStyles.labelLarge
-                              .copyWith(color: AppColors.secondary)),
-                    ],
-                  ),
-                ),
-              ),
-
-            const SizedBox(height: AppLayout.paddingLG),
-
-            // 이전/다음 네비게이션
-            Row(
-              children: [
-                if (hasPrev)
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      icon: const Icon(Icons.arrow_back_ios_new, size: 14),
-                      label: const Text('이전'),
-                      onPressed: () => context.pushReplacement(
-                          '/phrase/${allPhrases[currentIndex - 1].id}'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.textSecondaryColor(context),
-                        side: BorderSide(color: AppColors.borderColor(context)),
-                        shape: RoundedRectangleBorder(
-                          borderRadius:
-                              BorderRadius.circular(AppLayout.radiusMD),
-                        ),
-                      ),
-                    ),
-                  ),
-                if (hasPrev && hasNext) const SizedBox(width: AppLayout.gapMD),
-                if (hasNext)
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      label: const Text('다음'),
-                      icon: const Icon(Icons.arrow_forward_ios, size: 14),
-                      onPressed: () => context.pushReplacement(
-                          '/phrase/${allPhrases[currentIndex + 1].id}'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius:
-                              BorderRadius.circular(AppLayout.radiusMD),
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-            const SizedBox(height: AppLayout.paddingLG),
           ],
-        ),
+        ],
       ),
     );
   }
 }
 
-class _TtsButton extends StatelessWidget {
+// ─── Highlighted Example ───────────────────────────────────────
+
+class _HighlightedExample extends StatelessWidget {
+  final String example;
+  final String phraseEnglish;
+
+  const _HighlightedExample({
+    required this.example,
+    required this.phraseEnglish,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final lowerExample = example.toLowerCase();
+    final cleanPhrase = phraseEnglish
+        .toLowerCase()
+        .replaceAll(RegExp(r'[?!.]'), '')
+        .trim();
+
+    final startIdx = lowerExample.indexOf(cleanPhrase);
+
+    if (startIdx == -1) {
+      return Text(
+        '"$example"',
+        style: AppTextStyles.bodyLarge.copyWith(
+          color: AppColors.textPrimaryColor(context),
+          fontWeight: FontWeight.w500,
+        ),
+      );
+    }
+
+    int endIdx = startIdx + cleanPhrase.length;
+    if (endIdx < example.length && '?!.,'.contains(example[endIdx])) {
+      endIdx++;
+    }
+
+    return RichText(
+      text: TextSpan(
+        style: AppTextStyles.bodyLarge.copyWith(
+          color: AppColors.textPrimaryColor(context),
+          fontWeight: FontWeight.w500,
+        ),
+        children: [
+          TextSpan(text: '"${example.substring(0, startIdx)}'),
+          TextSpan(
+            text: example.substring(startIdx, endIdx),
+            style: TextStyle(
+              color: AppColors.primaryColor(context),
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          TextSpan(text: '${example.substring(endIdx)}"'),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Circle Control Button ─────────────────────────────────────
+
+class _CircleControlButton extends StatelessWidget {
   final IconData icon;
   final String label;
-  final Color color;
+  final bool isActive;
+  final Color? activeColor;
   final VoidCallback onTap;
 
-  const _TtsButton({
+  const _CircleControlButton({
     required this.icon,
     required this.label,
-    required this.color,
+    this.isActive = false,
+    this.activeColor,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
+    final color = isActive
+        ? (activeColor ?? AppColors.primaryColor(context))
+        : AppColors.textSecondaryColor(context);
+
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: AppLayout.paddingMD),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(AppLayout.radiusMD),
-          border: Border.all(color: color.withValues(alpha: 0.3)),
-        ),
-        child: Column(
-          children: [
-            Icon(icon, color: color, size: AppLayout.iconMD),
-            const SizedBox(height: 4),
-            Text(label, style: AppTextStyles.bodySmall.copyWith(color: color)),
-          ],
+      child: Column(
+        children: [
+          Container(
+            width: AppLayout.iconXL,
+            height: AppLayout.iconXL,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: AppColors.surfaceColor(context),
+              border: Border.all(
+                color: isActive ? color : AppColors.borderColor(context),
+                width: 2,
+              ),
+            ),
+            child: Icon(icon, color: color, size: AppLayout.iconMD),
+          ),
+          const SizedBox(height: AppLayout.gapSM),
+          Text(
+            label,
+            style: AppTextStyles.bodySmall.copyWith(
+              color: AppColors.textSecondaryColor(context),
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Header Icon Button ────────────────────────────────────────
+
+class _HeaderIconButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _HeaderIconButton({required this.icon, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppLayout.radiusCircle),
+        child: Padding(
+          padding: const EdgeInsets.all(AppLayout.paddingSM),
+          child: Icon(
+            icon,
+            color: AppColors.textPrimaryColor(context),
+            size: AppLayout.iconMD,
+          ),
         ),
       ),
     );
   }
 }
 
-class _ExampleCard extends StatelessWidget {
-  final dynamic example;
+// ─── Custom Slider Thumb ───────────────────────────────────────
 
-  const _ExampleCard({required this.example});
+class _SliderThumb extends SliderComponentShape {
+  final Color borderColor;
+
+  const _SliderThumb({required this.borderColor});
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: AppLayout.gapMD),
-      padding: const EdgeInsets.all(AppLayout.paddingMD),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceColor(context),
-        borderRadius: BorderRadius.circular(AppLayout.radiusMD),
-        border: Border.all(color: AppColors.borderColor(context)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(example.english, style: AppTextStyles.bodyLarge),
-          const SizedBox(height: 4),
-          Text(
-            example.korean,
-            style: AppTextStyles.bodyMedium
-                .copyWith(color: AppColors.textSecondaryColor(context)),
-          ),
-        ],
-      ),
+  Size getPreferredSize(bool isEnabled, bool isDiscrete) =>
+      const Size(18, 18);
+
+  @override
+  void paint(
+    PaintingContext context,
+    Offset center, {
+    required Animation<double> activationAnimation,
+    required Animation<double> enableAnimation,
+    required bool isDiscrete,
+    required TextPainter labelPainter,
+    required RenderBox parentBox,
+    required SliderThemeData sliderTheme,
+    required TextDirection textDirection,
+    required double value,
+    required double textScaleFactor,
+    required Size sizeWithOverflow,
+  }) {
+    final canvas = context.canvas;
+    // White fill
+    canvas.drawCircle(
+      center,
+      9,
+      Paint()..color = Colors.white,
+    );
+    // Color border
+    canvas.drawCircle(
+      center,
+      9,
+      Paint()
+        ..color = borderColor
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2,
     );
   }
 }
