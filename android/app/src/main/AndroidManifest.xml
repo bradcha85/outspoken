@@ -1,6 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application
-        android:label="app_1772117535286_20260226"
+        android:label="OutSpoken"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

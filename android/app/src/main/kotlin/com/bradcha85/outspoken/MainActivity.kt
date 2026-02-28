@@ -1,4 +1,4 @@
-package com.example.app_1772117535286_20260226
+package com.bradcha85.outspoken
 
 import io.flutter.embedding.android.FlutterActivity
 
