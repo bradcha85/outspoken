@@ -1,0 +1,32 @@
+name: app_1772117535286_20260226
+description: "OutSpoken - 영어회화 연습 앱"
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.4.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  go_router: ^14.6.3
+  provider: ^6.1.5
+  shared_preferences: ^2.3.5
+  http: ^1.2.2
+  sherpa_onnx: ^1.12.27
+  audioplayers: ^6.5.1
+  path_provider: ^2.1.5
+  path: ^1.9.1
+  archive: ^4.0.9
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/

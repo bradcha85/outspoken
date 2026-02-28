@@ -1,0 +1,15 @@
+[
+  {"name": "스플래시", "path": "/splash"},
+  {"name": "온보딩", "path": "/onboarding"},
+  {"name": "홈", "path": "/home"},
+  {"name": "카테고리", "path": "/categories"},
+  {"name": "진도", "path": "/progress"},
+  {"name": "설정", "path": "/settings"},
+  {"name": "표현 목록", "path": "/phrase-list/:categoryId"},
+  {"name": "표현 상세", "path": "/phrase/:id"},
+  {"name": "연습", "path": "/practice/:categoryId"},
+  {"name": "AI 대화", "path": "/chat"},
+  {"name": "퀴즈", "path": "/quiz"},
+  {"name": "즐겨찾기", "path": "/favorites"},
+  {"name": "로드맵", "path": "/roadmap"}
+]

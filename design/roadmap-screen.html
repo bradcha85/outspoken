@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OutSpoken — 개발 로드맵</title>
+  <style>
+    /* ── Reset & Base ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --primary:      #3B82F6;
+      --primary-dark: #1D4ED8;
+      --secondary:    #10B981;
+      --accent:       #F59E0B;
+      --error:        #EF4444;
+      --bg:           #F8FAFC;
+      --surface:      #FFFFFF;
+      --surface-alt:  #F1F5F9;
+      --text-primary: #1E293B;
+      --text-secondary:#64748B;
+      --text-disabled:#CBD5E1;
+      --border:       #E2E8F0;
+
+      /* Phase colours */
+      --p1: #6366F1;   /* Indigo  */
+      --p2: #3B82F6;   /* Blue    */
+      --p3: #10B981;   /* Emerald */
+      --p4: #8B5CF6;   /* Purple  */
+      --p5: #F59E0B;   /* Amber   */
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
+      background: #CBD5E1;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 16px;
+    }
+
+    /* ── Phone Shell ── */
+    .phone {
+      width: 390px;
+      min-height: 844px;
+      background: var(--bg);
+      border-radius: 48px;
+      box-shadow:
+        0 0 0 10px #1E293B,
+        0 0 0 12px #475569,
+        0 40px 80px rgba(0,0,0,.45);
+      overflow: hidden;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Status Bar ── */
+    .status-bar {
+      height: 44px;
+      background: var(--primary-dark);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 28px;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+    .status-bar .time { font-size: 15px; }
+    .status-icons { display: flex; gap: 6px; align-items: center; }
+    .status-icons span { font-size: 12px; }
+
+    /* ── App Header ── */
+    .app-header {
+      background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
+      padding: 20px 24px 28px;
+      color: #fff;
+      flex-shrink: 0;
+    }
+    .header-top {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .back-btn {
+      width: 36px; height: 36px;
+      background: rgba(255,255,255,.18);
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; cursor: pointer;
+    }
+    .header-title-group { flex: 1; }
+    .header-label {
+      font-size: 12px;
+      color: rgba(255,255,255,.75);
+      letter-spacing: .8px;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+    .header-title {
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    /* Summary chips */
+    .summary-row {
+      display: flex;
+      gap: 10px;
+    }
+    .summary-chip {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255,255,255,.18);
+      backdrop-filter: blur(8px);
+      border-radius: 20px;
+      padding: 6px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #fff;
+    }
+    .summary-chip .chip-icon { font-size: 15px; }
+
+    /* ── Scroll body ── */
+    .scroll-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px 16px 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .scroll-body::-webkit-scrollbar { display: none; }
+
+    /* ── Section label ── */
+    .section-label {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      letter-spacing: .8px;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    /* ── Overall progress bar ── */
+    .overall-progress {
+      background: var(--surface);
+      border-radius: 16px;
+      padding: 16px 18px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.07);
+    }
+    .op-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .op-label { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+    .op-week { font-size: 13px; color: var(--text-secondary); }
+    .progress-track {
+      height: 8px;
+      background: var(--surface-alt);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      border-radius: 99px;
+      background: linear-gradient(90deg, var(--primary) 0%, var(--secondary) 100%);
+    }
+    .op-steps {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 8px;
+    }
+    .op-step {
+      font-size: 10px;
+      color: var(--text-disabled);
+      font-weight: 600;
+    }
+
+    /* ── Phase Card ── */
+    .phase-card {
+      background: var(--surface);
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,.08);
+      position: relative;
+    }
+
+    /* Left accent bar */
+    .phase-card::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 5px;
+      background: var(--phase-color);
+      border-radius: 0;
+    }
+
+    /* Phase header */
+    .phase-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 18px 14px 22px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .phase-badge {
+      width: 42px; height: 42px;
+      border-radius: 14px;
+      background: color-mix(in srgb, var(--phase-color) 15%, transparent);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 19px;
+      flex-shrink: 0;
+    }
+    .phase-info { flex: 1; }
+    .phase-tag {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--phase-color);
+      letter-spacing: .6px;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+    .phase-name {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+    .phase-week-badge {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--phase-color);
+      background: color-mix(in srgb, var(--phase-color) 12%, transparent);
+      padding: 4px 10px;
+      border-radius: 20px;
+      white-space: nowrap;
+    }
+    .chevron { font-size: 14px; color: var(--text-disabled); }
+
+    /* Divider */
+    .phase-divider {
+      height: 1px;
+      background: var(--border);
+      margin: 0 18px 0 22px;
+    }
+
+    /* Task list */
+    .task-list {
+      padding: 12px 18px 16px 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+    }
+    .task-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+    .task-num {
+      width: 22px; height: 22px;
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--phase-color) 12%, transparent);
+      color: var(--phase-color);
+      font-size: 10px;
+      font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .task-text {
+      font-size: 13px;
+      color: var(--text-primary);
+      line-height: 1.55;
+      flex: 1;
+    }
+
+    /* Phase footer — mini progress */
+    .phase-footer {
+      padding: 0 18px 14px 22px;
+    }
+    .pf-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 5px;
+    }
+    .pf-label { font-size: 11px; color: var(--text-secondary); }
+    .pf-count { font-size: 11px; font-weight: 700; color: var(--phase-color); }
+    .mini-track {
+      height: 4px;
+      background: var(--surface-alt);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+    .mini-fill {
+      height: 100%;
+      border-radius: 99px;
+      background: var(--phase-color);
+    }
+
+    /* ── Timeline connector ── */
+    .timeline-connector {
+      width: 2px;
+      height: 14px;
+      background: var(--border);
+      margin: 0 auto;
+      border-radius: 99px;
+    }
+
+    /* ── Bottom note ── */
+    .bottom-note {
+      background: linear-gradient(135deg, #EFF6FF 0%, #F0FDF4 100%);
+      border: 1.5px solid var(--border);
+      border-radius: 16px;
+      padding: 14px 16px;
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+    .note-icon { font-size: 18px; flex-shrink: 0; }
+    .note-text { font-size: 12px; color: var(--text-secondary); line-height: 1.6; }
+    .note-text strong { color: var(--text-primary); }
+
+    /* ── Bottom tab bar ── */
+    .tab-bar {
+      height: 83px;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-around;
+      padding-top: 10px;
+      flex-shrink: 0;
+    }
+    .tab-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      padding: 0 12px;
+      cursor: pointer;
+    }
+    .tab-icon { font-size: 22px; }
+    .tab-label { font-size: 10px; font-weight: 600; color: var(--text-disabled); }
+    .tab-item.active .tab-icon { filter: none; }
+    .tab-item.active .tab-label { color: var(--primary); }
+    .tab-active-dot {
+      width: 4px; height: 4px;
+      background: var(--primary);
+      border-radius: 50%;
+      margin-top: -2px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="phone">
+
+  <!-- Status Bar -->
+  <div class="status-bar">
+    <span class="time">9:41</span>
+    <div class="status-icons">
+      <span>●●●</span>
+      <span>WiFi</span>
+      <span>🔋</span>
+    </div>
+  </div>
+
+  <!-- App Header -->
+  <div class="app-header">
+    <div class="header-top">
+      <div class="back-btn">←</div>
+      <div class="header-title-group">
+        <div class="header-label">OutSpoken</div>
+        <div class="header-title">개발 로드맵</div>
+      </div>
+    </div>
+    <div class="summary-row">
+      <div class="summary-chip">
+        <span class="chip-icon">🗓</span>
+        7~10주 예상
+      </div>
+      <div class="summary-chip">
+        <span class="chip-icon">🚀</span>
+        5단계 Phase
+      </div>
+      <div class="summary-chip">
+        <span class="chip-icon">✅</span>
+        25개 작업
+      </div>
+    </div>
+  </div>
+
+  <!-- Scroll Body -->
+  <div class="scroll-body">
+
+    <!-- Overall progress -->
+    <div class="overall-progress">
+      <div class="op-row">
+        <span class="op-label">전체 진행도</span>
+        <span class="op-week">Phase 1 of 5</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" style="width: 20%"></div>
+      </div>
+      <div class="op-steps">
+        <span class="op-step">Phase 1</span>
+        <span class="op-step">Phase 2</span>
+        <span class="op-step">Phase 3</span>
+        <span class="op-step">Phase 4</span>
+        <span class="op-step">Phase 5</span>
+      </div>
+    </div>
+
+    <!-- ── Phase 1 ── -->
+    <div class="phase-card" style="--phase-color: #6366F1">
+      <div class="phase-header">
+        <div class="phase-badge">🏗️</div>
+        <div class="phase-info">
+          <div class="phase-tag">Phase 1</div>
+          <div class="phase-name">기반 구축</div>
+        </div>
+        <div class="phase-week-badge">1~2주</div>
+        <span class="chevron">▾</span>
+      </div>
+      <div class="phase-divider"></div>
+      <div class="task-list">
+        <div class="task-item">
+          <div class="task-num">1</div>
+          <div class="task-text">Expo 프로젝트 초기 설정 (TypeScript, NativeWind)</div>
+        </div>
+        <div class="task-item">
+          <div class="task-num">2</div>
+          <div class="task-text">React Navigation 구조 설정 (Tab + Stack)</div>
+        </div>
+        <div class="task-item">
+          <div class="task-num">3</div>
+          <div class="task-text">색상 팔레트, 타이포그래피 상수 정의</div>
+        </div>
+        <div class="task-item">
+          <div class="task-num">4</div>
+          <div class="task-text">공통 컴포넌트 작성 (Button, Card, ProgressBar)</div>
+        </div>
+        <div class="task-item">
+          <div class="task-num">5</div>
+          <div class="task-text">Zustand 스토어 스켈레톤 작성</div>
+        </div>
+        <div class="task-item">
+          <div class="task-num">6</div>
+          <div class="task-text">정적 데이터 작성 (카테고리 6개, 각 10개 표현)</div>
+        </div>
+      </div>
+      <div class="phase-footer">
+        <div class="pf-row">
+          <span class="pf-label">작업 수</span>
+          <span class="pf-count">6개 작업</span>
+        </div>
+        <div class="mini-track">
+          <div class="mini-fill" style="width: 100%"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="timeline-connector"></div>
+
+    <!-- ── Phase 2 ── -->
+    <div class="phase-card" style="--phase-color: #3B82F6">
+      <div class="phase-header">
+        <div class="phase-badge">📚</div>
+        <div class="phase-info">
+          <div class="phase-tag">Phase 2</div>
+          <div class="phase-name">핵심 학습 기능</div>
+        </div>
+        <div class="phase-week-badge">2~3주</div>
+        <span class="chevron">▾</span>
+      </div>
+      <div class="phase-divider"></div>
+      <div class="task-list">
+        <div class="task-item">
+          <div class="task-num">7</div>
+          <div class="task-text">Onboarding (레벨 선택) 화면</div>
+        </div>
+        <div class="task-item">
+          <div class="task-num">8</div>
+          <div class="task-text">Home 대시보드 화면</div>
+        </div>
+        <div class="task-item">
+          <div class="task-num">9</div>
+          <div class="task-text">Category 목록 화면</div>
+        </div>
+        <div class="task-item">
+          <div class="task-num">10</div>
+          <div class="task-text">Phrase List 화면</div>
+        </div>
+        <div class="task-item">
+          <div class="task-num">11</div>
+          <div class="task-text">Phrase Detail 화면 (TTS 연동 포함)</div>
+        </div>
+        <div class="task-item">
+          <div class="task-num">12</div>
+          <div class="task-text">즐겨찾기 기능 + Favorites 화면</div>
+        </div>
+      </div>
+      <div class="phase-footer">
+        <div class="pf-row">
+          <span class="pf-label">작업 수</span>
+          <span class="pf-count">6개 작업</span>
+        </div>
+        <div class="mini-track">
+          <div class="mini-fill" style="width: 0%"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="timeline-connector"></div>
+
+    <!-- ── Phase 3 ── -->
+    <div class="phase-card" style="--phase-color: #10B981">
+      <div class="phase-header">
+        <div class="phase-badge">🎯</div>
+        <div class="phase-info">
+          <div class="phase-tag">Phase 3</div>
+          <div class="phase-name">연습 기능</div>
+        </div>
+        <div class="phase-week-badge">1~2주</div>
+        <span class="chevron">▾</span>
+      </div>
+      <div class="phase-divider"></div>
+      <div class="task-list">
+        <div class="task-item">
+          <div class="task-num">13</div>
+          <div class="task-text">Practice 화면 (플래시카드 모드)</div>
+        </div>
+        <div class="task-item">
+          <div class="task-num">14</div>
+          <div class="task-text">Quiz 화면 (객관식, 빈칸 채우기)</div>
+        </div>
+        <div class="task-item">
+          <div class="task-num">15</div>
+          <div class="task-text">연속 학습 스트릭 로직</div>
+        </div>
+        <div class="task-item">
+          <div class="task-num">16</div>
+          <div class="task-text">Progress 화면 (차트 포함)</div>
+        </div>
+      </div>
+      <div class="phase-footer">
+        <div class="pf-row">
+          <span class="pf-label">작업 수</span>
+          <span class="pf-count">4개 작업</span>
+        </div>
+        <div class="mini-track">
+          <div class="mini-fill" style="width: 0%"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="timeline-connector"></div>
+
+    <!-- ── Phase 4 ── -->
+    <div class="phase-card" style="--phase-color: #8B5CF6">
+      <div class="phase-header">
+        <div class="phase-badge">🤖</div>
+        <div class="phase-info">
+          <div class="phase-tag">Phase 4</div>
+          <div class="phase-name">AI 대화 기능</div>
+        </div>
+        <div class="phase-week-badge">1~2주</div>
+        <span class="chevron">▾</span>
+      </div>
+      <div class="phase-divider"></div>
+      <div class="task-list">
+        <div class="task-item">
+          <div class="task-num">17</div>
+          <div class="task-text">Claude API 연동 (<code style="font-size:12px;background:#F1F5F9;padding:1px 5px;border-radius:4px;">useClaudeChat</code> 훅)</div>
+        </div>
+        <div class="task-item">
+          <div class="task-num">18</div>
+          <div class="task-text">AI Chat 화면 (채팅 UI)</div>
+        </div>
+        <div class="task-item">
+          <div class="task-num">19</div>
+          <div class="task-text">문법 피드백 칩 표시</div>
+        </div>
+        <div class="task-item">
+          <div class="task-num">20</div>
+          <div class="task-text">음성 입력 (STT) 연동</div>
+        </div>
+      </div>
+      <div class="phase-footer">
+        <div class="pf-row">
+          <span class="pf-label">작업 수</span>
+          <span class="pf-count">4개 작업</span>
+        </div>
+        <div class="mini-track">
+          <div class="mini-fill" style="width: 0%"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="timeline-connector"></div>
+
+    <!-- ── Phase 5 ── -->
+    <div class="phase-card" style="--phase-color: #F59E0B">
+      <div class="phase-header">
+        <div class="phase-badge">✨</div>
+        <div class="phase-info">
+          <div class="phase-tag">Phase 5</div>
+          <div class="phase-name">마무리</div>
+        </div>
+        <div class="phase-week-badge">1주</div>
+        <span class="chevron">▾</span>
+      </div>
+      <div class="phase-divider"></div>
+      <div class="task-list">
+        <div class="task-item">
+          <div class="task-num">21</div>
+          <div class="task-text">Splash / 애니메이션 다듬기</div>
+        </div>
+        <div class="task-item">
+          <div class="task-num">22</div>
+          <div class="task-text">Settings 화면 (알림, 학습 목표)</div>
+        </div>
+        <div class="task-item">
+          <div class="task-num">23</div>
+          <div class="task-text">로컬 알림 구현</div>
+        </div>
+        <div class="task-item">
+          <div class="task-num">24</div>
+          <div class="task-text">성능 최적화 + 빌드 테스트</div>
+        </div>
+        <div class="task-item">
+          <div class="task-num">25</div>
+          <div class="task-text">앱 아이콘 / 스플래시 이미지 적용</div>
+        </div>
+      </div>
+      <div class="phase-footer">
+        <div class="pf-row">
+          <span class="pf-label">작업 수</span>
+          <span class="pf-count">5개 작업</span>
+        </div>
+        <div class="mini-track">
+          <div class="mini-fill" style="width: 0%"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom note -->
+    <div class="bottom-note">
+      <span class="note-icon">💡</span>
+      <div class="note-text">
+        <strong>Phase 4 주의:</strong> Claude API 키 발급 후 진행.<br>
+        STT는 <strong>@react-native-voice/voice</strong> 라이브러리 검토 후 연동 권장.<br>
+        첫 릴리스 데이터는 <strong>정적 파일 80개 표현</strong>으로 시작.
+      </div>
+    </div>
+
+  </div><!-- /scroll-body -->
+
+  <!-- Tab Bar -->
+  <div class="tab-bar">
+    <div class="tab-item">
+      <span class="tab-icon">🏠</span>
+      <span class="tab-label">홈</span>
+    </div>
+    <div class="tab-item">
+      <span class="tab-icon">📖</span>
+      <span class="tab-label">카테고리</span>
+    </div>
+    <div class="tab-item active">
+      <span class="tab-icon">📊</span>
+      <span class="tab-label" style="color:#3B82F6">진도</span>
+      <div class="tab-active-dot"></div>
+    </div>
+    <div class="tab-item">
+      <span class="tab-icon">⚙️</span>
+      <span class="tab-label">설정</span>
+    </div>
+  </div>
+
+</div><!-- /phone -->
+
+</body>
+</html>
